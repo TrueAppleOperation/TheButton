@@ -14,7 +14,7 @@ OcclusionCullingSettings:
 RenderSettings:
   m_ObjectHideFlags: 0
   serializedVersion: 10
-  m_Fog: 1
+  m_Fog: 0
   m_FogColor: {r: 0, g: 0, b: 0, a: 1}
   m_FogMode: 3
   m_FogDensity: 0.277
@@ -6255,19 +6255,19 @@ MonoBehaviour:
   pressDistance: 0.3
   OnClick:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 1012525301}
-        m_TargetAssemblyTypeName: UnityEngine.AudioSource, UnityEngine
-        m_MethodName: Play
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
+  audioSource: {fileID: 1012525301}
+  playSoundOnce: 1
+  targetLight: {fileID: 964431778}
+  turnLightOff: 1
+  targetParticles: {fileID: 2042398572}
+  turnOffParticles: 1
+  enableFogOnPress: 1
+  fogMode: 2
+  fogColor: {r: 0, g: 0, b: 0, a: 1}
+  fogDensity: 0.277
+  linearFogStart: 0
+  linearFogEnd: 300
 --- !u!1001 &5351782942500567331
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -6329,7 +6329,7 @@ PrefabInstance:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 964431779}
+  - {fileID: 2111108462}
   - {fileID: 832575519}
   - {fileID: 1172562430}
   - {fileID: 2094696970}
@@ -6338,6 +6338,6 @@ SceneRoots:
   - {fileID: 1046666267}
   - {fileID: 324161540}
   - {fileID: 280713378}
+  - {fileID: 964431779}
   - {fileID: 1012525302}
-  - {fileID: 2111108462}
   - {fileID: 2042398573}
