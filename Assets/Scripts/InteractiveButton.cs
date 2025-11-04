@@ -3,9 +3,11 @@ using UnityEngine.Events;
 
 public class InteractiveButton : MonoBehaviour
 {
+    public float WinTime = 30f; // The 30 second goal
     public GameObject buttonTop;
     public float pressDistance = 0.1f;
     public UnityEvent OnClick;
+    
 
     [Header("Audio Settings")]
     public AudioSource audioSource;
@@ -13,11 +15,12 @@ public class InteractiveButton : MonoBehaviour
 
     [Header("Light Settings")]
     public Light targetLight;
-    public bool turnLightOff = true;
+    private Color initialLightColor = Color.white;
+    //public bool turnLightOff = true;
 
     [Header("Particle Settings")]
     public ParticleSystem targetParticles;
-    public bool turnOffParticles = true;
+    //public bool turnOffParticles = true;
 
     [Header("Fog Settings")]
     public bool enableFogOnPress = true;
@@ -27,11 +30,22 @@ public class InteractiveButton : MonoBehaviour
     public float linearFogStart = 0.0f;
     public float linearFogEnd = 300.0f;
 
+    [Header("Incremental Effects")]
+    public Color clickOneFogColor = Color.gray;
+    public Color clickTwoLightColor = Color.red;
+    public Color clickThreeAmbientColor = Color.black; // For a screen darkening effect
+
     private Vector3 originalPosition;
     private bool isPressed = false;
     private bool hasPlayedSound = false;
     private bool lightWasOn = false;
     private bool canPress = true;
+
+    private int clickCount = 0;
+    private float winTimer = 0f;
+    private bool gameIsActive = true;
+    private bool gameIsWon = false;
+    private Color originalAmbientColor;
 
     void Start()
     {
@@ -46,22 +60,34 @@ public class InteractiveButton : MonoBehaviour
         }
 
         // Store initial light state
+        originalAmbientColor = RenderSettings.ambientLight;
         if (targetLight != null)
         {
-            lightWasOn = targetLight.enabled;
+            initialLightColor = targetLight.color;
         }
+        RenderSettings.fog = false; // Start with fog disabled
+        winTimer = 0f;
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0) && canPress)
+        if (gameIsActive && !gameIsWon)
         {
-            CheckForClick();
-        }
+            if (Input.GetMouseButtonDown(0) && canPress)
+            {
+                CheckForClick();
+            }
 
-        if (Input.GetMouseButtonUp(0) && isPressed)
-        {
-            ReleaseButton();
+            if (Input.GetMouseButtonUp(0) && isPressed)
+            {
+                ReleaseButton();
+            }
+            
+            winTimer += Time.deltaTime;
+            if (winTimer >= WinTime)
+            {
+                WinGame();
+            }
         }
     }
 
@@ -84,8 +110,16 @@ public class InteractiveButton : MonoBehaviour
 
     void PressButton()
     {
+        if (!gameIsActive) return;
         canPress = false;
         isPressed = true;
+
+        clickCount++;
+        winTimer = 0f; // Reset timer on click
+        Debug.Log("Button pressed! Click count: " + clickCount);
+
+        // Call the new method for effects
+        ApplyIncrementalEffect(clickCount);
 
         // Move button
         if (buttonTop != null)
@@ -125,43 +159,6 @@ public class InteractiveButton : MonoBehaviour
             Debug.LogWarning("AudioSource is null!");
         }
 
-        // Turn off light
-        if (targetLight != null && turnLightOff)
-        {
-            lightWasOn = targetLight.enabled;
-            targetLight.enabled = false;
-            Debug.Log("Light turned off");
-        }
-
-        // Turn off particles
-        if (targetParticles != null && turnOffParticles)
-        {
-            targetParticles.Stop();
-            Debug.Log("Particles turned off");
-        }
-
-        // Enable fog
-        if (enableFogOnPress)
-        {
-            RenderSettings.fog = true;
-            RenderSettings.fogMode = fogMode;
-            RenderSettings.fogColor = fogColor;
-
-            switch (fogMode)
-            {
-                case FogMode.Linear:
-                    RenderSettings.fogStartDistance = linearFogStart;
-                    RenderSettings.fogEndDistance = linearFogEnd;
-                    break;
-                case FogMode.Exponential:
-                case FogMode.ExponentialSquared:
-                    RenderSettings.fogDensity = fogDensity;
-                    break;
-            }
-
-            Debug.Log("Fog enabled with mode: " + fogMode);
-        }
-
         // Invoke events
         if (OnClick != null)
         {
@@ -171,6 +168,76 @@ public class InteractiveButton : MonoBehaviour
         else
         {
             Debug.LogError("OnClick event is null!");
+        }
+    }
+
+    void ApplyIncrementalEffect(int count)
+    {
+        switch (count)
+        {
+            case 1:
+                if (targetLight != null)
+                {
+                    targetLight.enabled = false;
+                }
+                // Effect 1: Fog Appears(The original effect)
+                RenderSettings.fog = true;
+                RenderSettings.fogMode = FogMode.Exponential;
+                RenderSettings.fogColor = clickOneFogColor;
+                RenderSettings.fogDensity = 0.01f;
+                Debug.Log("Click 1: Fog is enabled.");
+                break;
+
+            case 2:
+                // Effect 2: Light Changes Color
+                if (targetLight != null)
+                {
+                    ToggleLight();
+                    targetLight.color = clickTwoLightColor; // Red light
+                }
+                RenderSettings.ambientLight = originalAmbientColor;
+                Debug.Log("Click 2: Quick, intense RED light flash.");
+                break;
+
+            case 3:
+                // Effect 3: Darken the World (Ambient Light)
+                RenderSettings.ambientLight = clickThreeAmbientColor; // Makes everything very dark
+                if (targetLight != null)
+                {
+                    targetLight.color = new Color(0f, 1f, 1f); // Cyan
+                }
+                Debug.Log("Click 3: Ambient light darkens + Magenta Flash.");
+                break;
+
+            case 4:
+                // Effect 4: Stop Particles
+                if (targetParticles != null)
+                {
+                    targetParticles.Stop();
+                }
+                Debug.Log("Click 4: Particles stop flowing.");
+                break;
+
+            case 5:
+                // Effect 5: Reset Light Color, Increase Fog Density 
+                if (targetLight != null)
+                {
+                    targetLight.color = new Color(0.5f, 0f, 1f); // Brighter Purple
+                }
+                RenderSettings.fogColor = new Color(0.2f, 0.8f, 0.2f); // Neon green fog
+                RenderSettings.fogDensity = 0.07f;
+                Debug.Log("Click 5: Brighter purple light and neon green fog (Acid Trip begins).");
+                break;
+
+            default:
+                if (targetLight != null)
+                {
+                    targetLight.enabled = true;
+                    targetLight.color = new Color(Random.value, Random.value, Random.value);
+                    targetLight.intensity = Random.Range(7000f, 10000f); // Constant flickering
+                }
+                Debug.Log("Click " + count + ": System overload effect!");
+                break;
         }
     }
 
@@ -265,5 +332,14 @@ public class InteractiveButton : MonoBehaviour
     {
         RenderSettings.fog = false;
         Debug.Log("Fog disabled");
+    }
+ 
+    void WinGame()
+    {
+        gameIsWon = true;
+        gameIsActive = false;
+        Debug.Log("Congratulations! You have won the game by surviving "+ WinTime + " seconds without pressing the button!");
+        DisableFog();
+        if (targetLight != null) targetLight.enabled = true;
     }
 }
