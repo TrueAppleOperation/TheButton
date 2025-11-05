@@ -1,17 +1,24 @@
 using UnityEngine;
 using UnityEngine.Events;
+using TMPro;
 
 public class InteractiveButton : MonoBehaviour
 {
-    public float WinTime = 30f; // The 30 second goal
+    public float WinTime = 30f;
     public GameObject buttonTop;
     public float pressDistance = 0.1f;
     public UnityEvent OnClick;
-    
+
 
     [Header("Audio Settings")]
     public AudioSource audioSource;
     public bool playSoundOnce = true;
+
+    [Header("New Audio Settings")]
+    public AudioSource introAudioSource; 
+
+    [Header("UI Settings")]
+    public TMP_Text countdownText; 
 
     [Header("Light Settings")]
     public Light targetLight;
@@ -46,6 +53,7 @@ public class InteractiveButton : MonoBehaviour
     private bool gameIsActive = true;
     private bool gameIsWon = false;
     private Color originalAmbientColor;
+    private bool buttonWasPressed = false; // Track if button was ever pressed
 
     void Start()
     {
@@ -67,6 +75,27 @@ public class InteractiveButton : MonoBehaviour
         }
         RenderSettings.fog = false; // Start with fog disabled
         winTimer = 0f;
+
+        // Initialize countdown text
+        if (countdownText != null)
+        {
+            countdownText.text = WinTime.ToString("F0");
+        }
+        else
+        {
+            Debug.LogWarning("Countdown Text (TMP) is not assigned!");
+        }
+
+        // Play intro audio at the beginning
+        if (introAudioSource != null)
+        {
+            introAudioSource.Play();
+            Debug.Log("Intro audio started playing");
+        }
+        else
+        {
+            Debug.LogWarning("IntroAudioSource is null - no intro audio will play");
+        }
     }
 
     void Update()
@@ -82,8 +111,16 @@ public class InteractiveButton : MonoBehaviour
             {
                 ReleaseButton();
             }
-            
+
             winTimer += Time.deltaTime;
+
+            // Update countdown text
+            if (countdownText != null && !buttonWasPressed)
+            {
+                float timeRemaining = Mathf.Max(0f, WinTime - winTimer);
+                countdownText.text = timeRemaining.ToString("F0");
+            }
+
             if (winTimer >= WinTime)
             {
                 WinGame();
@@ -113,12 +150,25 @@ public class InteractiveButton : MonoBehaviour
         if (!gameIsActive) return;
         canPress = false;
         isPressed = true;
+        buttonWasPressed = true;
 
         clickCount++;
         winTimer = 0f; // Reset timer on click
         Debug.Log("Button pressed! Click count: " + clickCount);
 
-        // Call the new method for effects
+        if (introAudioSource != null && introAudioSource.isPlaying)
+        {
+            introAudioSource.Stop();
+            Debug.Log("Intro audio stopped");
+        }
+
+        if (countdownText != null)
+        {
+            countdownText.text = "You should not have done that";
+            countdownText.fontSize = 24;
+        }
+        Debug.Log("You should not have done that");
+
         ApplyIncrementalEffect(clickCount);
 
         // Move button
@@ -333,13 +383,34 @@ public class InteractiveButton : MonoBehaviour
         RenderSettings.fog = false;
         Debug.Log("Fog disabled");
     }
- 
+
     void WinGame()
     {
         gameIsWon = true;
         gameIsActive = false;
-        Debug.Log("Congratulations! You have won the game by surviving "+ WinTime + " seconds without pressing the button!");
+
+        if (countdownText != null)
+        {
+            if (!buttonWasPressed)
+            {
+                countdownText.text = "Congratulations! You won!";
+                countdownText.fontSize = 24; 
+                Debug.Log("Congratulations! You have won the game by surviving " + WinTime + " seconds without pressing the button!");
+            }
+            else
+            {
+                countdownText.text = "You should not have done that";
+                Debug.Log("Game over - you pressed the button!");
+            }
+        }
+
         DisableFog();
         if (targetLight != null) targetLight.enabled = true;
+
+        if (introAudioSource != null && introAudioSource.isPlaying)
+        {
+            introAudioSource.Stop();
+            Debug.Log("Intro audio stopped (game won)");
+        }
     }
 }
