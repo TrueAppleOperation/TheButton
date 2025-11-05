@@ -12,6 +12,7 @@ public class InteractiveButton : MonoBehaviour
 
     [Header("Audio Settings")]
     public AudioSource audioSource;
+    public AudioSource ButtonClick;
     public bool playSoundOnce = true;
 
     [Header("New Audio Settings")]
@@ -166,9 +167,10 @@ public class InteractiveButton : MonoBehaviour
         {
             countdownText.text = "You should not have done that";
             countdownText.fontSize = 24;
+            Invoke("ClearWarningText", 5.0f);
         }
         Debug.Log("You should not have done that");
-
+        ButtonClick.Play();
         ApplyIncrementalEffect(clickCount);
 
         // Move button
@@ -391,26 +393,19 @@ public class InteractiveButton : MonoBehaviour
 
         if (countdownText != null)
         {
-            if (!buttonWasPressed)
-            {
-                countdownText.text = "Congratulations! You won!";
-                countdownText.fontSize = 24; 
-                Debug.Log("Congratulations! You have won the game by surviving " + WinTime + " seconds without pressing the button!");
-            }
-            else
-            {
-                countdownText.text = "You should not have done that";
-                Debug.Log("Game over - you pressed the button!");
-            }
+            countdownText.text = "Congratulations! You won!";
+            countdownText.fontSize = 24; 
+            Debug.Log("Congratulations! You have won the game by surviving " + WinTime + " seconds without pressing the button!");
+            
         }
-
-        DisableFog();
-        if (targetLight != null) targetLight.enabled = true;
-
-        if (introAudioSource != null && introAudioSource.isPlaying)
+    }
+    public void ClearWarningText()
+    {
+        if (countdownText != null)
         {
-            introAudioSource.Stop();
-            Debug.Log("Intro audio stopped (game won)");
+            // Reset text to empty string or dashes
+            countdownText.text = null;
+            Debug.Log("Warning text cleared after 5 seconds.");
         }
     }
 }
