@@ -16,10 +16,10 @@ public class InteractiveButton : MonoBehaviour
     public bool playSoundOnce = true;
 
     [Header("New Audio Settings")]
-    public AudioSource introAudioSource; 
+    public AudioSource introAudioSource;
 
     [Header("UI Settings")]
-    public TMP_Text countdownText; 
+    public TMP_Text countdownText;
 
     [Header("Light Settings")]
     public Light targetLight;
@@ -394,9 +394,9 @@ public class InteractiveButton : MonoBehaviour
         if (countdownText != null)
         {
             countdownText.text = "Congratulations! You won!";
-            countdownText.fontSize = 24; 
+            countdownText.fontSize = 24;
             Debug.Log("Congratulations! You have won the game by surviving " + WinTime + " seconds without pressing the button!");
-            
+
         }
     }
     public void ClearWarningText()
