@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.Events;
 using TMPro;
+using System.Collections;
 
 public class InteractiveButton : MonoBehaviour
 {
@@ -8,6 +9,12 @@ public class InteractiveButton : MonoBehaviour
     public GameObject buttonTop;
     public float pressDistance = 0.1f;
     public UnityEvent OnClick;
+
+    [Header("Camera Settings")]
+    public Camera mainCamera;
+    private Vector3 originalCameraPosition;
+    private float originalFOV;
+    private Coroutine fovCoroutine;
 
     [Header("Audio Settings")]
     public AudioSource audioSource;
@@ -38,10 +45,13 @@ public class InteractiveButton : MonoBehaviour
     public float linearFogStart = 0.0f;
     public float linearFogEnd = 300.0f;
 
+    [Header("Blackout Effects")]
+    public GameObject blackoutPanel; // A simple opaque black quad or image canvas
+    private Color originalCameraColor;
+
     [Header("Incremental Effects")]
     public Color clickOneFogColor = Color.gray;
     public Color clickTwoLightColor = Color.red;
-    public Color clickThreeAmbientColor = Color.black; // For a screen darkening effect
 
     private Vector3 originalPosition;
     private bool isPressed = false;
@@ -56,9 +66,23 @@ public class InteractiveButton : MonoBehaviour
     private Color originalAmbientColor;
     private bool buttonWasPressed = false; // Track if button was ever pressed
     private bool hasScheduledDelayedAudio = false; // Track if delayed audio
+    private Color originalColor;
 
     void Start()
     {
+        mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            originalCameraColor = mainCamera.backgroundColor;
+            originalCameraPosition = mainCamera.transform.localPosition;
+            originalFOV = mainCamera.fieldOfView;
+        }
+        // Ensure the blackout panel starts invisible
+        if (blackoutPanel != null)
+        {
+            blackoutPanel.SetActive(false);
+        }
+
         if (buttonTop != null)
         {
             originalPosition = buttonTop.transform.localPosition;
@@ -167,9 +191,9 @@ public class InteractiveButton : MonoBehaviour
         // Schedule delayed ringing audio only on first click
         if (clickCount == 1 && !hasScheduledDelayedAudio && delayedRingingAudio != null)
         {
-            Invoke("PlayDelayedRinging", 10f);
+            Invoke("PlayDelayedRinging", 22f);
             hasScheduledDelayedAudio = true;
-            Debug.Log("Delayed ringing audio scheduled to play in 10 seconds");
+            Debug.Log("Delayed ringing audio scheduled to play in 22 seconds");
         }
 
         if (clickCount == 2 && delayedRingingAudio != null)
@@ -178,13 +202,7 @@ public class InteractiveButton : MonoBehaviour
             Debug.Log("Delayed ringing audio stopped on second click");
         }
 
-        if (countdownText != null)
-        {
-            countdownText.text = "You should not have done that";
-            countdownText.fontSize = 24;
-            Invoke("ClearWarningText", 5.0f);
-        }
-        Debug.Log("You should not have done that");
+        
         ButtonClick.Play();
         ApplyIncrementalEffect(clickCount);
 
@@ -209,6 +227,12 @@ public class InteractiveButton : MonoBehaviour
                     audioSource.Play();
                     hasPlayedSound = true;
                     Debug.Log("Sound played (once only). hasPlayedSound is now: " + hasPlayedSound);
+                    if (countdownText != null)
+                    {
+                        countdownText.text = "You should not have done that";
+                        Invoke("ClearWarningText", 5.0f);
+                    }
+                    Debug.Log("You should not have done that");
                 }
                 else
                 {
@@ -290,28 +314,16 @@ public class InteractiveButton : MonoBehaviour
                 RenderSettings.ambientLight = originalAmbientColor;
                 Debug.Log("Click 2: Quick, intense RED light flash.");
                 break;
-
             case 3:
-                // Effect 3: Darken the World (Ambient Light)
-                RenderSettings.ambientLight = clickThreeAmbientColor; // Makes everything very dark
-                if (targetLight != null)
-                {
-                    targetLight.color = new Color(0f, 1f, 1f); // Cyan
-                }
-                Debug.Log("Click 3: Ambient light darkens + Magenta Flash.");
+                StartScreenShake(4.0f);
+                Debug.Log("Click 3: Screen Shake Effect");
                 break;
 
             case 4:
-                // Effect 4: Stop Particles
-                if (targetParticles != null)
-                {
-                    targetParticles.Stop();
-                }
-                Debug.Log("Click 4: Particles stop flowing.");
+                QuickBlackout(1.5f);
+                Debug.Log("Click 4: Quick Blackout Effect!");
                 break;
-
             case 5:
-                // Effect 5: Reset Light Color, Increase Fog Density 
                 if (targetLight != null)
                 {
                     targetLight.color = new Color(0.5f, 0f, 1f); // Brighter Purple
@@ -320,13 +332,26 @@ public class InteractiveButton : MonoBehaviour
                 RenderSettings.fogDensity = 0.07f;
                 Debug.Log("Click 5: Brighter purple light and neon green fog (Acid Trip begins).");
                 break;
-
+            case 6:
+                StartColorTrip();
+                Debug.Log("Click 6: ACID TRIP MODE ENGAGED!");
+                break;
+            case 7:
+                StopColorTrip();
+                fovCoroutine = StartCoroutine(ExecuteFOVSequence(30f, 90f, 1f, 2f));
+                if (targetParticles != null)
+                {
+                    targetParticles.Stop();
+                }
+                Debug.Log("Click 8: Particles stop flowing.");
+                break;
+            
             default:
                 if (targetLight != null)
                 {
                     targetLight.enabled = true;
                     targetLight.color = new Color(Random.value, Random.value, Random.value);
-                    targetLight.intensity = Random.Range(7000f, 10000f); // Constant flickering
+                    targetLight.intensity = Random.Range(3000f, 20000f); // Constant flickering
                 }
                 Debug.Log("Click " + count + ": System overload effect!");
                 break;
@@ -437,7 +462,6 @@ public class InteractiveButton : MonoBehaviour
         if (countdownText != null)
         {
             countdownText.text = "Congratulations! You won!";
-            countdownText.fontSize = 24;
             Debug.Log("Congratulations! You have won the game by surviving " + WinTime + " seconds without pressing the button!");
         }
     }
@@ -449,6 +473,113 @@ public class InteractiveButton : MonoBehaviour
             // Reset text to empty string or dashes
             countdownText.text = null;
             Debug.Log("Warning text cleared after 5 seconds.");
+        }
+    }
+    void QuickBlackout(float duration = 0.5f)
+    {
+        if (blackoutPanel != null)
+        {
+            blackoutPanel.SetActive(true);
+            // Use Invoke to schedule turning it off
+            Invoke("EndBlackout", duration);
+        }
+    }
+    private void EndBlackout()
+    {
+        if (blackoutPanel != null)
+        {
+            blackoutPanel.SetActive(false);
+        }
+    }
+    void RestoreCameraBg()
+    {
+        if (mainCamera != null)
+        {
+            mainCamera.backgroundColor = originalColor;
+        }
+    }
+    void StartColorTrip()
+    {
+        InvokeRepeating("CycleColors", 0f, 0.1f); // Change color every 0.1 seconds
+    }
+
+    void CycleColors()
+    {
+        Color randomColor = new Color(Random.value, Random.value, Random.value);
+
+        RenderSettings.fogColor = randomColor;
+
+        if (targetLight != null)
+        {
+            targetLight.color = randomColor;
+        }
+    }
+
+    void StopColorTrip()
+    {
+        CancelInvoke("CycleColors");
+    }
+    public void StartScreenShake(float duration = 1.0f)
+    {
+        // Use InvokeRepeating to continuously apply random displacement
+        InvokeRepeating("ShakeCamera", 0f, 0.01f);
+
+        // Schedule the stop after the desired duration
+        Invoke("StopScreenShake", duration);
+    }
+    private void ShakeCamera()
+    {
+        if (mainCamera != null)
+        {
+            // Randomly displace the camera
+            float x = Random.Range(-0.05f, 0.05f);
+            float y = Random.Range(-0.05f, 0.05f);
+
+            mainCamera.transform.localPosition = originalCameraPosition + new Vector3(x, y, 0);
+        }
+    }
+    private void StopScreenShake()
+    {
+        CancelInvoke("ShakeCamera");
+        if (mainCamera != null)
+        {
+            // Return the camera to its original, steady position
+            mainCamera.transform.localPosition = originalCameraPosition;
+        }
+    }
+    private IEnumerator AnimateFOV(float targetFOV, float duration)
+    {
+        if (mainCamera == null) yield break;
+
+        float startFOV = mainCamera.fieldOfView;
+        float time = 0;
+
+        while (time <= duration)
+        {
+            mainCamera.fieldOfView = Mathf.Lerp(startFOV, targetFOV, time / duration);
+            time += Time.deltaTime;
+            yield return null; // Wait until the next frame
+        }
+        mainCamera.fieldOfView = targetFOV; // Ensure it ends exactly at targetFOV
+    }
+    private IEnumerator ExecuteFOVSequence(float LowFOVBound, float HighFOVBound, float transitionDuration, float times)
+    {
+        float n = 0;
+        while (n <= times)
+        {
+            // 1. Transition UP: From current FOV (Original) to High Bound
+            Debug.Log("FOV Sequence 1: Going UP to High Bound.");
+            yield return StartCoroutine(AnimateFOV(HighFOVBound, transitionDuration));
+
+            // 2. Transition DOWN: From High Bound back to Low Bound
+            Debug.Log("FOV Sequence 2: Going DOWN to Low Bound.");
+            yield return StartCoroutine(AnimateFOV(LowFOVBound, transitionDuration*2));
+
+            // 3. Transition RESET: From Low Bound back to Original FOV
+            // Note: We use originalFOV, which was stored in Start().
+            Debug.Log("FOV Sequence 3: Returning to Normal.");
+            yield return StartCoroutine(AnimateFOV(originalFOV, transitionDuration));
+            n++;
         }
     }
 }
