@@ -459,11 +459,7 @@ public class InteractiveButton : MonoBehaviour
 
         // Cancel any pending delayed audio if the game is won
         StopDelayedRinging();
-
-        if (countdownText != null)
-        {
-            SceneManager.LoadScene("Main");
-        }
+        SceneManager.LoadScene("END");       
     }
 
     public void ClearWarningText()
