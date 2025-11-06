@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Events;
 using TMPro;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class InteractiveButton : MonoBehaviour
 {
@@ -461,8 +462,7 @@ public class InteractiveButton : MonoBehaviour
 
         if (countdownText != null)
         {
-            countdownText.text = "Congratulations! You won!";
-            Debug.Log("Congratulations! You have won the game by surviving " + WinTime + " seconds without pressing the button!");
+            SceneManager.LoadScene("Main");
         }
     }
 
