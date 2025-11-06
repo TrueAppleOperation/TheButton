@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 
 public class InteractiveButton : MonoBehaviour
 {
-    public float WinTime = 30f;
+    public float WinTime = 32f;
     public GameObject buttonTop;
     public float pressDistance = 0.1f;
     public UnityEvent OnClick;
@@ -71,6 +71,8 @@ public class InteractiveButton : MonoBehaviour
 
     void Start()
     {
+        CancelInvoke();
+
         mainCamera = Camera.main;
         if (mainCamera != null)
         {
@@ -459,6 +461,7 @@ public class InteractiveButton : MonoBehaviour
 
         // Cancel any pending delayed audio if the game is won
         StopDelayedRinging();
+        introAudioSource.Stop();
         SceneManager.LoadScene("END");       
     }
 
