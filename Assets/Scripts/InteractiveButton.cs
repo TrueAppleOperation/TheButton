@@ -9,7 +9,6 @@ public class InteractiveButton : MonoBehaviour
     public float pressDistance = 0.1f;
     public UnityEvent OnClick;
 
-
     [Header("Audio Settings")]
     public AudioSource audioSource;
     public AudioSource ButtonClick;
@@ -17,6 +16,7 @@ public class InteractiveButton : MonoBehaviour
 
     [Header("New Audio Settings")]
     public AudioSource introAudioSource;
+    public AudioSource delayedRingingAudio; // New audio source for delayed ringing
 
     [Header("UI Settings")]
     public TMP_Text countdownText;
@@ -55,6 +55,7 @@ public class InteractiveButton : MonoBehaviour
     private bool gameIsWon = false;
     private Color originalAmbientColor;
     private bool buttonWasPressed = false; // Track if button was ever pressed
+    private bool hasScheduledDelayedAudio = false; // Track if delayed audio
 
     void Start()
     {
@@ -163,6 +164,20 @@ public class InteractiveButton : MonoBehaviour
             Debug.Log("Intro audio stopped");
         }
 
+        // Schedule delayed ringing audio only on first click
+        if (clickCount == 1 && !hasScheduledDelayedAudio && delayedRingingAudio != null)
+        {
+            Invoke("PlayDelayedRinging", 10f);
+            hasScheduledDelayedAudio = true;
+            Debug.Log("Delayed ringing audio scheduled to play in 10 seconds");
+        }
+
+        if (clickCount == 2 && delayedRingingAudio != null)
+        {
+            StopDelayedRinging();
+            Debug.Log("Delayed ringing audio stopped on second click");
+        }
+
         if (countdownText != null)
         {
             countdownText.text = "You should not have done that";
@@ -223,6 +238,28 @@ public class InteractiveButton : MonoBehaviour
         }
     }
 
+    void PlayDelayedRinging()
+    {
+        if (delayedRingingAudio != null && gameIsActive)
+        {
+            delayedRingingAudio.Play();
+            Debug.Log("Delayed ringing audio started playing after 10 seconds");
+        }
+    }
+
+    void StopDelayedRinging()
+    {
+        CancelInvoke("PlayDelayedRinging");
+
+        if (delayedRingingAudio != null && delayedRingingAudio.isPlaying)
+        {
+            delayedRingingAudio.Stop();
+            Debug.Log("Delayed ringing audio stopped");
+        }
+
+        hasScheduledDelayedAudio = false;
+    }
+
     void ApplyIncrementalEffect(int count)
     {
         switch (count)
@@ -241,6 +278,9 @@ public class InteractiveButton : MonoBehaviour
                 break;
 
             case 2:
+                // Stop delayed ringing audio at second click
+                StopDelayedRinging();
+
                 // Effect 2: Light Changes Color
                 if (targetLight != null)
                 {
@@ -391,14 +431,17 @@ public class InteractiveButton : MonoBehaviour
         gameIsWon = true;
         gameIsActive = false;
 
+        // Cancel any pending delayed audio if the game is won
+        StopDelayedRinging();
+
         if (countdownText != null)
         {
             countdownText.text = "Congratulations! You won!";
             countdownText.fontSize = 24;
             Debug.Log("Congratulations! You have won the game by surviving " + WinTime + " seconds without pressing the button!");
-
         }
     }
+
     public void ClearWarningText()
     {
         if (countdownText != null)

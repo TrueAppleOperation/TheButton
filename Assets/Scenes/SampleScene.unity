@@ -1912,7 +1912,7 @@ GameObject:
   - component: {fileID: 1969332648}
   - component: {fileID: 1969332647}
   m_Layer: 0
-  m_Name: RingingAudio
+  m_Name: RingingAudioSource
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1929,8 +1929,8 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 0}
-  m_Resource: {fileID: 0}
-  m_PlayOnAwake: 1
+  m_Resource: {fileID: 8300000, guid: c0ee1d01eb7c81a47b5f4f9cf90199f4, type: 3}
+  m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
   Loop: 0
@@ -7190,6 +7190,7 @@ MonoBehaviour:
   ButtonClick: {fileID: 1044013158}
   playSoundOnce: 1
   introAudioSource: {fileID: 1028586721}
+  delayedRingingAudio: {fileID: 1969332647}
   countdownText: {fileID: 1513893630}
   targetLight: {fileID: 964431778}
   targetParticles: {fileID: 2042398572}
